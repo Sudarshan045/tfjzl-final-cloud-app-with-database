@@ -1,55 +1,55 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    {% load static %}
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Exam result | {{ course.name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 </head>
-<body>
-
- <nav class="navbar navbar-light bg-light">
-    <div class="container-fluid">
-        <div class="navbar-header">
-              <a class="navbar-brand" href="{% url 'onlinecourse:index' %}">Home</a>
+<body class="bg-light">
+    <nav class="navbar navbar-light bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'onlinecourse:index' %}">OnlineCourse</a>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'onlinecourse:course_details' course.id %}">Back to course</a>
         </div>
-        <ul class="nav navbar-nav navbar-right">
-            {% if user.is_authenticated %}
-            <li>
-                <a class="btn btn-link" href="#">{{ user.first_name }}({{ user.username }})</a>
-                <a class="btn btn-link" href="{% url 'onlinecourse:logout' %}">Logout</a>
-            </li>
-            {% else %}
-            <li>
-                <form class="form-inline" action="{% url 'onlinecourse:login' %}" method="post">
-                    {% csrf_token %}
-                    <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Username" name="username" >
-                        <input type="password" class="form-control" placeholder="Username" name="psw" >
-                        <button class="btn btn-primary" type="submit">Login</button>
-                        <a class="btn btn-link" href="{% url 'onlinecourse:registration' %}">Sign Up</a>
-                    </div>
-                </form>
-            </li>
-            {% endif %}
-        </ul>
-    </div>
-</nav>
+    </nav>
 
-<div class="container-fluid">
-    {% if grade > 80 %}
-    <div class="alert alert-success">
-       <!--HINT Display passed info -->
-    </div>
+    <main class="container py-4">
+        {% if passed %}
+            <div class="alert alert-success">
+                <h1 class="h3">Congratulations, {{ user.first_name|default:user.username }}!</h1>
+                <p class="mb-0">You passed the mock exam with {{ total_score }}/{{ possible }} points ({{ grade }}%).</p>
+            </div>
         {% else %}
-        <div class="alert alert-danger">
-            <!--HINT Display failed info -->
-        </div>
-        <a class="btn btn-link text-danger" href="{% url 'onlinecourse:course_details' course.id %}">Re-test</a>
+            <div class="alert alert-warning">
+                <h1 class="h3">Keep practicing, {{ user.first_name|default:user.username }}.</h1>
+                <p class="mb-0">Your score is {{ total_score }}/{{ possible }} points ({{ grade }}%). Review the answers and try again.</p>
+            </div>
         {% endif %}
-        <div class="card-columns-vertical mt-1">
-        <h5 class="">Exam results</h5>
-            <!--HINT Display exam results-->
-        </div>
-    </div>
+
+        <h2 class="h4 mb-3">Exam results</h2>
+        {% for result in results %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>Question {{ forloop.counter }}: {{ result.question.question_text }}</strong>
+                    <span class="badge {% if result.is_correct %}badge-success{% else %}badge-danger{% endif %} float-right">
+                        {{ result.earned }}/{{ result.question.grade }}
+                    </span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for choice in result.choices %}
+                        <li class="list-group-item {% if choice.is_correct %}list-group-item-success{% elif choice.id in selected_ids %}list-group-item-danger{% endif %}">
+                            {% if choice.id in selected_ids %}✓ Selected: {% endif %}
+                            {{ choice.choice_text }}
+                            {% if choice.is_correct %}<span class="text-success">(correct answer)</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% empty %}
+            <div class="alert alert-info">There are no questions for this exam yet.</div>
+        {% endfor %}
+    </main>
 </body>
 </html>

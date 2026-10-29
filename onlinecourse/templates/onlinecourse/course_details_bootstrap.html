@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ course.name }} | OnlineCourse</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'onlinecourse:index' %}">OnlineCourse</a>
+            <div class="ml-auto">
+                {% if user.is_authenticated %}
+                    <span class="navbar-text mr-3">{{ user.first_name|default:user.username }}</span>
+                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'onlinecourse:logout' %}">Logout</a>
+                {% else %}
+                    <a class="btn btn-primary btn-sm" href="{% url 'onlinecourse:login' %}">Login</a>
+                    <a class="btn btn-link btn-sm" href="{% url 'onlinecourse:registration' %}">Sign up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <h1 class="h2">{{ course.name }}</h1>
+        <p class="lead">{{ course.description }}</p>
+        {% if course.image %}
+            <img src="{{ course.image.url }}" class="img-fluid rounded mb-3" alt="{{ course.name }}">
+        {% endif %}
+
+        <h2 class="h4 mt-4">Lessons</h2>
+        <div class="row">
+            {% for lesson in lessons %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="h6 mb-0">Lesson {{ lesson.order|add:1 }}: {{ lesson.title }}</h3>
+                        </div>
+                        <div class="card-body">{{ lesson.content|linebreaks }}</div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">No lessons have been added to this course yet.</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <section class="card mt-4">
+            <div class="card-header"><h2 class="h5 mb-0">Mock exam</h2></div>
+            <div class="card-body">
+                {% if not user.is_authenticated %}
+                    <p>Please log in to take the exam.</p>
+                    <a class="btn btn-primary" href="{% url 'onlinecourse:login' %}">Login</a>
+                {% elif not is_enrolled %}
+                    <p>Enroll in this course to take the exam.</p>
+                    <form action="{% url 'onlinecourse:enroll' course.id %}" method="post">
+                        {% csrf_token %}
+                        <button class="btn btn-primary" type="submit">Enroll</button>
+                    </form>
+                {% else %}
+                    <form action="{% url 'onlinecourse:submit' course.id %}" method="post">
+                        {% csrf_token %}
+                        {% for question in questions %}
+                            <fieldset class="card mb-3">
+                                <legend class="card-header h6">
+                                    Question {{ forloop.counter }}: {{ question.question_text }}
+                                    <span class="badge badge-info float-right">{{ question.grade }} point{{ question.grade|pluralize }}</span>
+                                </legend>
+                                <div class="card-body">
+                                    {% for choice in question.choice_set.all %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="choice_{{ choice.id }}" id="choice_{{ choice.id }}"
+                                                   value="{{ choice.id }}">
+                                            <label class="form-check-label" for="choice_{{ choice.id }}">
+                                                {{ choice.choice_text }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        {% empty %}
+                            <div class="alert alert-info">No exam questions have been added yet.</div>
+                        {% endfor %}
+                        {% if questions %}
+                            <button class="btn btn-success" type="submit">Submit exam</button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
